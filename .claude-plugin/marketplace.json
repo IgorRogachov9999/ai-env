@@ -5,17 +5,18 @@
     "url": "https://github.com/IgorRogachov9999"
   },
   "metadata": {
-    "version": "1.0.0",
-    "description": "Declarative Claude Code AI development environment manager — applies desired state for marketplaces, plugins, skills, MCP servers, and agents from a single config file"
+    "description": "Declarative Claude Code AI development environment manager — applies desired state for marketplaces, plugins, skills, MCP servers, and agents from a single config file",
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "ai-env",
-      "source": "./Skills/ai-env",
       "description": "Manages the Claude Code AI development environment using a declarative desired-state model. Reads ai-env.json, applies the desired state, installs skills, configures MCP servers, and validates agents.",
-      "version": "1.0.0",
-      "category": "tooling",
-      "keywords": ["env", "environment", "mcp", "skills", "agents", "plugins", "declarative", "devtools"]
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./Skills/ai-env"
+      ]
     }
   ]
 }
