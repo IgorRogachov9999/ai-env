@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ai-env/v1",
+  "title": "ai-env",
+  "description": "Declarative desired-state configuration for a Claude Code AI development environment.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference."
+    },
+    "marketplaces": {
+      "type": "array",
+      "description": "Plugin marketplaces and package registries to connect to.",
+      "items": {
+        "type": "object",
+        "required": ["name", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short alias used to reference this marketplace in plugins and skills."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Base URL of the marketplace or registry."
+          }
+        }
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "description": "Plugins to install from connected marketplaces.",
+      "items": {
+        "type": "object",
+        "required": ["name", "marketplace", "id"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Local alias for this plugin."
+          },
+          "marketplace": {
+            "type": "string",
+            "description": "Must match the name of a declared marketplace."
+          },
+          "id": {
+            "type": "string",
+            "description": "Plugin identifier as known to the marketplace."
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["project", "user", "local"],
+            "default": "project",
+            "description": "Scope at which the plugin is installed. 'project' (default) = project-level, visible to all users of the project; 'user' = current user only; 'local' = local machine only, not committed."
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "description": "Claude Code skills to install and activate.",
+      "items": {
+        "type": "object",
+        "required": ["name", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Skill identifier."
+          },
+          "source": {
+            "type": "string",
+            "enum": ["github", "plugin", "local"],
+            "description": "Where to obtain the skill. github = git clone; plugin = provided by an installed plugin; local = already on disk."
+          },
+          "repo": {
+            "type": "string",
+            "description": "GitHub repository in owner/repo format. Required when source is 'github'.",
+            "pattern": "^[^/]+/[^/]+$"
+          },
+          "installPath": {
+            "type": "string",
+            "description": "Filesystem path where the skill will be installed. Defaults to .claude/skills/<name>."
+          },
+          "plugin": {
+            "type": "string",
+            "description": "Plugin name that provides this skill. Required when source is 'plugin'."
+          },
+          "marketplace": {
+            "type": "string",
+            "description": "Marketplace that hosts the parent plugin. Required when source is 'plugin'."
+          }
+        },
+        "if": { "properties": { "source": { "const": "github" } }, "required": ["source"] },
+        "then": { "required": ["repo"] },
+        "else": {
+          "if": { "properties": { "source": { "const": "plugin" } }, "required": ["source"] },
+          "then": { "required": ["plugin", "marketplace"] },
+          "else": {
+            "if": { "properties": { "source": { "const": "local" } }, "required": ["source"] },
+            "then": { "required": ["installPath"] }
+          }
+        }
+      }
+    },
+    "mcpServers": {
+      "type": "array",
+      "description": "MCP servers to configure in .mcp.json.",
+      "items": {
+        "type": "object",
+        "required": ["name", "transport"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Server identifier. Used as the key in .mcp.json."
+          },
+          "transport": {
+            "type": "string",
+            "enum": ["docker", "npx", "uvx", "local"],
+            "description": "How to launch the server. Prefer docker > npx > uvx when multiple options exist."
+          },
+          "image": {
+            "type": "string",
+            "description": "Docker image name and tag. Required when transport is 'docker'."
+          },
+          "package": {
+            "type": "string",
+            "description": "npm package name (npx) or PyPI package name (uvx). Required for those transports."
+          },
+          "command": {
+            "type": "string",
+            "description": "Executable to run. Required when transport is 'local'."
+          },
+          "args": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Additional arguments passed after the command or package name."
+          },
+          "env": {
+            "type": "object",
+            "description": "Environment variables. Values starting with $ are resolved from .env.",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "if": { "properties": { "transport": { "const": "docker" } }, "required": ["transport"] },
+        "then": { "required": ["image"] },
+        "else": {
+          "if": {
+            "properties": { "transport": { "enum": ["npx", "uvx"] } },
+            "required": ["transport"]
+          },
+          "then": { "required": ["package"] },
+          "else": {
+            "if": { "properties": { "transport": { "const": "local" } }, "required": ["transport"] },
+            "then": { "required": ["command"] }
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "description": "Subagent files expected to exist in .claude/agents/.",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Agent display name."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to the agent .md file, relative to project root."
+          }
+        }
+      }
+    }
+  }
+}
